@@ -1,9 +1,9 @@
-import Preprocessing
+import Preprocessing_MLdata2
 import Methods
 
 dataset_name = 'MLdata2.csv'
 
-data_train, data_test, label_train, label_test = Preprocessing.get_dataset(dataset_name)
+data_train, data_test, label_train, label_test = Preprocessing_MLdata2.get_dataset(dataset_name)
 
 logistic_regression = Methods.logistic_regression(data_train, data_test, label_train, label_test)
 naive_bayes = Methods.naive_bayes(data_train, data_test, label_train, label_test)
