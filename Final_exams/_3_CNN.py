@@ -1,15 +1,40 @@
-import torch.nn as nn
-import torch
+import matplotlib as plt
 import torch.utils.data
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
+from torchvision import datasets, transforms
 from torch.autograd import Variable
 
 torch.manual_seed(72170300)
 torch.cuda.manual_seed(72170300)
-batch_size = 10
+batch_size = 50
 
 
+class MnistModel(nn.Module):
+    def __init__(self):
+        super(MnistModel, self).__init__()
+
+        self.conv1 = nn.Conv2d(1, 32, 5, padding=2)
+        self.conv2 = nn.Conv2d(32, 64, 5, padding=2)
+
+        self.fc1 = nn.Linear(64 * 7 * 7, 1024)
+        self.fc2 = nn.Linear(1024, 10)
+
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = x.view(-1, 64 * 7 * 7)  # reshape Variable
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return F.log_softmax(x)
+
+
+model = MnistModel()
+model.cuda()
 
 class CSVImageSet(torch.utils.data.Dataset):
     def __init__(self, name):
@@ -30,91 +55,38 @@ class CSVImageSet(torch.utils.data.Dataset):
 
 
 
-train_loader = torch.utils.data.DataLoader(CSVImageSet('short_prac_train.csv'),shuffle=True)
-test_loader = torch.utils.data.DataLoader(CSVImageSet('short_prac_test.csv'))
-
-class CNN(nn.Module):
-    def __init__(self):
-        super(CNN, self).__init__()
-        self.main = nn.Sequential(
-            # 1*28*28 => 64*14*14
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=4, stride=2, padding=1),
-            nn.LeakyReLU(0.1, inplace=True),
-
-            # 64*14*14 => 128*7*7
-            nn.Conv2d(64, 128, 4, 2, 1),
-            nn.BatchNorm2d(128),
-            nn.LeakyReLU(0.1, inplace=True),
-
-            # 128*7*7 => 1024*1*1
-            nn.Conv2d(128, 1024, 7, 1, 0, bias=False),
-            nn.BatchNorm2d(1024),
-            nn.LeakyReLU(0.1, inplace=True),
-
-            nn.Conv2d(1024, 10, 1),
-            nn.BatchNorm2d(10),
-            nn.LeakyReLU(0.1, inplace=True),
-
-            nn.Softmax2d()
-        )
-    def forward(self, input):
-
-        output = self.main(input)
-        return output
-    def weight_init(self):
-        self.encoder.apply(weight_init)
-        self.z.apply(weight_init)
-        self.decoder.apply(weight_init)
-
-# xavier_init
-def weight_init(module):
-    classname = module.__class__.__name__
-    if classname.find('Conv') != -1:
-        torch.nn.init.xavier_normal(module.weight.data)
-        # module.weight.data.normal_(0.0, 0.01)
-    elif classname.find('BatchNorm') != -1:
-        module.weight.data.normal_(1.0, 0.02)
-        module.bias.data.fill_(0)
+train_loader = torch.utils.data.DataLoader(CSVImageSet('short_prac_train.csv'),shuffle=True,batch_size=batch_size)
+test_loader = torch.utils.data.DataLoader(CSVImageSet('short_prac_test.csv'),batch_size=1000)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
 
-
-model = CNN()
-model.apply(weight_init)
-model.cuda()
-
-label = torch.FloatTensor(batch_size,10,1,1)
-label.cuda()
-label=Variable(label,requires_grad=False)
-
-criterion = nn.BCELoss()
-criterion.cuda()
-
-optimizer = optim.Adam(model.parameters(), betas=(0.5, 0.999), lr=0.02)
-
-epoch = 10
-
-for epo in range(epoch):
-    for batch_idx, (data, label_) in enumerate(train_loader):
-        data = Variable(data)
-
-        label_case = [float(0) for i in range(10)]
-        label_case[int(label_[0])] = float(1)
-        label_case = np.asarray(label_case)
-        label_case.astype(float)
-        label.data = torch.FloatTensor(label_case)
-        label.cuda()
-
-        data = data.cuda()
+model.train()
+train_loss = []
+train_accu = []
+i = 0
+for epoch in range(15):
+    for data, target in train_loader:
+        data, target = Variable(data).cuda(), Variable(target).cuda()
         optimizer.zero_grad()
-        pred = model(data)
-        loss = criterion(pred.cpu(), label.view(-1, 10, 1, 1))
+        output = model(data)
+        loss = F.nll_loss(output, target)
         loss.backward()
+        train_loss.append(loss.data[0])
         optimizer.step()
-        print("[%d/%d][%d/%d] loss : %0.3f"%(epo,epoch,batch_idx,len(train_loader),loss.data[0]))
+        prediction = output.data.max(1)[1]
+        accuracy = prediction.eq(target.data).sum()/batch_size*100
+        train_accu.append(accuracy)
+        if i % 100 == 0:
+            print('Train Step: {} \t Loss: {:.3f}\t Accuracy: {:.3f}'.format(i, loss.data[0], accuracy))
+        i += 1
 
-for epo in range(epoch):
-    for batch_idx, (data, label_) in enumerate(test_loader):
-        data = Variable(data, volatile=True)
-        data = data.cuda()
-        pred = model(data)
-        print("[%d/%d][%d,%d] pred : %d , real label : %d"%(epo,epoch,batch_idx,len(train_loader),np.argmax(pred.data.cpu().numpy()),label_[0]))
+model.eval()
+correct = 0
+for data, target in test_loader:
+    data, target = Variable(data, volatile=True).cuda(), Variable(target).cuda()
+    output = model(data)
+    prediction = output.data.max(1)[1]
+    correct += prediction.eq(target.data).sum()
+    #print("prediction : %d , real_label : %d"%(prediction[0], target.data[0]))
+
+print('\nTest set: Accuracy: {:.2f}%'.format(100. * correct / len(test_loader.dataset)))
