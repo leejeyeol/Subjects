@@ -70,15 +70,3 @@ print(np.std(SVM_SVRMSEs))
 print(np.std(DNN_MAEs))
 print(np.std(DNN_RMSEs))
 print(np.std(DNN_SVRMSEs))
-'''
-1 output , 13 input data
-10-fold
-col 1 is useless. remove it
-*Normalize
-training DNN and SVM
-test => result
-* result unnormalize
-compute MAE, RMSE, CVRMSE
-compute mean, std of these.
-
-'''
