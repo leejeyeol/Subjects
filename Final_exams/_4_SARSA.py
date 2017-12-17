@@ -1,6 +1,6 @@
 import numpy as np
 import random
-
+import matplotlib.pyplot as plt
 
 def run_action(current_state, current_action):
     # run action with current state and current action
@@ -98,6 +98,9 @@ Q = np.asarray([[[np.random.normal(0,0.01) for i in range(len(actions))] for j i
 #Q = np.asarray([[[0 for i in range(len(actions))] for j in range(len(map))] for k in range(len(map))])
 
 total_episode=100000
+evaluation_list = []
+eval_per_100 = 0
+cnt = 0
 for episode in range(total_episode):
     Done = False
     current_state = initial_state.copy()
@@ -124,5 +127,16 @@ for episode in range(total_episode):
         current_state = next_state.copy()
         current_action = next_action
     print("[%d episode] Done! your final position is [%d, %d]. %s"%(episode,next_state[0], next_state[1],message))
+    cnt = cnt+1
+    if message == "Find Goal!":
+        eval_per_100 = eval_per_100 + 1
 
+    if (cnt)%100 == 0:
+        cnt = 0
+        evaluation_list.append(eval_per_100)
+        eval_per_100 = 0
+
+plt.plot(evaluation_list)
+plt.ylabel('successes per 100 episode')
+plt.show()
 

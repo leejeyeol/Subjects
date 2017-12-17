@@ -57,16 +57,20 @@ for i in range(number_of_folds):
     DNN_RMSEs.append(RMSE(test_labels[i], DNN_results[i]))
     DNN_SVRMSEs.append(SVRMSE(test_labels[i], DNN_results[i]))
 
-print(np.mean(SVM_MAEs))
-print(np.mean(SVM_RMSEs))
-print(np.mean(SVM_SVRMSEs))
-print(np.mean(DNN_MAEs))
-print(np.mean(DNN_RMSEs))
-print(np.mean(DNN_SVRMSEs))
+print("SVM_MAE mean : %0.2f"%np.mean(SVM_MAEs))
+print("SVM_MAE std : %0.5f\n"%np.std(SVM_MAEs))
 
-print(np.std(SVM_MAEs))
-print(np.std(SVM_RMSEs))
-print(np.std(SVM_SVRMSEs))
-print(np.std(DNN_MAEs))
-print(np.std(DNN_RMSEs))
-print(np.std(DNN_SVRMSEs))
+print("SVM_RMSE mean : %0.2f"%np.mean(SVM_RMSEs))
+print("SVM_RMSE std : %0.5f\n"%np.std(SVM_RMSEs))
+
+print("SVM_SVRMSE mean : %0.2f"%np.mean(SVM_SVRMSEs))
+print("SVM_SVRMSE std : %0.5f\n"%np.std(SVM_SVRMSEs))
+
+print("DNN_MAE mean : %0.2f"%np.mean(DNN_MAEs))
+print("DNN_MAE std : %0.5f\n"%np.std(DNN_MAEs))
+
+print("DNN_RMSE mean : %0.2f"%np.mean(DNN_RMSEs))
+print("DNN_RMSE std : %0.5f\n"%np.std(DNN_RMSEs))
+
+print("DNN_SVRMSE mean : %0.2d"%np.mean(DNN_SVRMSEs))
+print("DNN_SVRMSE std : %0.5f\n"%np.std(DNN_SVRMSEs))

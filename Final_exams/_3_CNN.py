@@ -1,11 +1,9 @@
-import matplotlib as plt
 import torch.utils.data
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import datasets, transforms
 from torch.autograd import Variable
 
 torch.manual_seed(72170300)
